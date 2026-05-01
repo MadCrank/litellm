@@ -1,9 +1,9 @@
 """
 CUSTOMER MANAGEMENT
 
-All /customer management endpoints 
+All /customer management endpoints
 
-/customer/new   
+/customer/new
 /customer/info
 /customer/update
 /customer/delete
@@ -358,6 +358,21 @@ async def new_end_user(
             if k not in BudgetNewRequest.model_fields.keys():
                 new_end_user_obj[k] = v
 
+        ## Initialize reset_at for budget_limits windows ##
+        if "budget_limits" in new_end_user_obj and new_end_user_obj["budget_limits"]:
+            from litellm.proxy.common_utils.timezone_utils import get_budget_reset_time
+            import json
+
+            raw_windows = new_end_user_obj["budget_limits"]
+            initialized_windows = []
+            for window in raw_windows:
+                w = window if isinstance(window, dict) else window.model_dump()
+                w["reset_at"] = get_budget_reset_time(
+                    budget_duration=w["budget_duration"]
+                ).isoformat()
+                initialized_windows.append(w)
+            new_end_user_obj["budget_limits"] = json.dumps(initialized_windows)
+
         ## Handle Object Permission - MCP Servers, Vector Stores etc.
         new_end_user_obj = await _set_object_permission(
             data_json=new_end_user_obj,
@@ -494,7 +509,7 @@ async def end_user_info(
     include_in_schema=False,
     dependencies=[Depends(user_api_key_auth)],
 )
-async def update_end_user(
+async def update_end_user(  # noqa: PLR0915
     data: UpdateCustomerRequest,
     user_api_key_dict: UserAPIKeyAuth = Depends(user_api_key_auth),
 ):
@@ -567,6 +582,24 @@ async def update_end_user(
                 0,
             ):  # models default to [], spend defaults to 0, we should not reset these values
                 non_default_values[k] = v
+
+        ## Initialize reset_at for budget_limits windows ##
+        if (
+            "budget_limits" in non_default_values
+            and non_default_values["budget_limits"]
+        ):
+            from litellm.proxy.common_utils.timezone_utils import get_budget_reset_time
+            import json
+
+            raw_windows = non_default_values["budget_limits"]
+            initialized_windows = []
+            for window in raw_windows:
+                w = window if isinstance(window, dict) else window.model_dump()
+                w["reset_at"] = get_budget_reset_time(
+                    budget_duration=w["budget_duration"]
+                ).isoformat()
+                initialized_windows.append(w)
+            non_default_values["budget_limits"] = json.dumps(initialized_windows)
 
         ## Get end user table data ##
         end_user_table_data = await prisma_client.db.litellm_endusertable.find_first(
