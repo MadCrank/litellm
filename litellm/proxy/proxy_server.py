@@ -1840,6 +1840,7 @@ async def increment_spend_counters(
     user_id: Optional[str],
     response_cost: Optional[float],
     org_id: Optional[str] = None,
+    end_user_id: Optional[str] = None,
 ):
     """
     Atomically increment spend counters for budget enforcement.
@@ -1939,6 +1940,30 @@ async def increment_spend_counters(
             source_cache_key=f"org_id:{org_id}",
             increment=response_cost,
         )
+
+    if end_user_id is not None:
+        end_user_obj = await user_api_key_cache.async_get_cache(
+            key=f"end_user_id:{end_user_id}"
+        )
+        if end_user_obj is not None:
+            end_user_budget_limits = getattr(end_user_obj, "budget_limits", None) or (
+                end_user_obj.get("budget_limits")
+                if isinstance(end_user_obj, dict)
+                else None
+            )
+            if isinstance(end_user_budget_limits, str):
+                end_user_budget_limits = json.loads(end_user_budget_limits)
+            if isinstance(end_user_budget_limits, list):
+                for window in end_user_budget_limits:
+                    duration = (
+                        window["budget_duration"]
+                        if isinstance(window, dict)
+                        else window.budget_duration
+                    )
+                    await spend_counter_cache.async_increment_cache(
+                        key=f"spend:end_user:{end_user_id}:window:{duration}",
+                        value=response_cost,
+                    )
 
 
 async def _init_and_increment_spend_counter(

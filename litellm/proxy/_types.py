@@ -1624,6 +1624,7 @@ class NewCustomerRequest(BudgetNewRequest):
         None  # if no equivalent model in allowed region - default all requests to this model
     )
     object_permission: Optional[LiteLLM_ObjectPermissionBase] = None
+    budget_limits: Optional[List[BudgetLimitEntry]] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -1652,6 +1653,7 @@ class UpdateCustomerRequest(LiteLLMPydanticObjectBase):
         None  # if no equivalent model in allowed region - default all requests to this model
     )
     object_permission: Optional[LiteLLM_ObjectPermissionBase] = None
+    budget_limits: Optional[List[BudgetLimitEntry]] = None
 
 
 class DeleteCustomerRequest(LiteLLMPydanticObjectBase):
@@ -2984,6 +2986,7 @@ class LiteLLM_EndUserTable(LiteLLMPydanticObjectBase):
     litellm_budget_table: Optional[LiteLLM_BudgetTable] = None
     object_permission_id: Optional[str] = None
     object_permission: Optional[LiteLLM_ObjectPermissionTable] = None
+    budget_limits: Optional[List[BudgetLimitEntry]] = None
 
     @model_validator(mode="before")
     @classmethod

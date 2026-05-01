@@ -1035,6 +1035,34 @@ def _check_end_user_budget(
         )
 
 
+async def _end_user_multi_budget_check(
+    end_user_object: LiteLLM_EndUserTable,
+):
+    if not end_user_object.budget_limits:
+        return
+
+    from litellm.proxy.proxy_server import get_current_spend
+
+    for window in end_user_object.budget_limits:
+        w: dict = window if isinstance(window, dict) else window.model_dump()
+        counter_key = (
+            f"spend:end_user:{end_user_object.user_id}:window:{w['budget_duration']}"
+        )
+        window_spend = await get_current_spend(
+            counter_key=counter_key,
+            fallback_spend=0.0,
+        )
+        if window_spend >= w["max_budget"]:
+            raise litellm.BudgetExceededError(
+                current_cost=window_spend,
+                max_budget=w["max_budget"],
+                message=(
+                    f"ExceededBudget: End User={end_user_object.user_id} over {w['budget_duration']} budget. "
+                    f"Spend=${window_spend:.4f}, Limit=${w['max_budget']:.2f}"
+                ),
+            )
+
+
 @log_db_metrics
 async def get_end_user_object(
     end_user_id: Optional[str],
@@ -1084,6 +1112,7 @@ async def get_end_user_object(
 
         # Check budget limits
         _check_end_user_budget(end_user_obj=return_obj, route=route)
+        await _end_user_multi_budget_check(end_user_object=return_obj)
 
         return return_obj
 
@@ -1115,6 +1144,7 @@ async def get_end_user_object(
 
         # Check budget limits
         _check_end_user_budget(end_user_obj=_response, route=route)
+        await _end_user_multi_budget_check(end_user_object=_response)
 
         return _response
 

@@ -1,0 +1,1 @@
+ALTER TABLE "LiteLLM_EndUserTable" ADD COLUMN IF NOT EXISTS "budget_limits" JSONB;

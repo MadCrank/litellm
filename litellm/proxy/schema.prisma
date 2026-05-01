@@ -526,6 +526,7 @@ model LiteLLM_EndUserTable {
   litellm_budget_table LiteLLM_BudgetTable?   @relation(fields: [budget_id], references: [budget_id])
   object_permission LiteLLM_ObjectPermissionTable?   @relation(fields: [object_permission_id], references: [object_permission_id])
   blocked Boolean @default(false)
+  budget_limits Json?
 }
 
 // Track tags with budgets and spend

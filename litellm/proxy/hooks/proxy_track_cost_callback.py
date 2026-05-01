@@ -214,6 +214,7 @@ class _ProxyDBLogger(CustomLogger):
                         user_id=user_id,
                         response_cost=response_cost,
                         org_id=org_id,
+                        end_user_id=end_user_id,
                     )
 
                     # update cache (fire-and-forget for backward compat:
